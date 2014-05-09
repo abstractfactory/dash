@@ -3,6 +3,8 @@ import pifou.lib
 import pifou.pom.domain
 import pifou.pom.node
 
+from pifou.com import source
+
 import openmetadata as om
 
 
@@ -12,8 +14,8 @@ import openmetadata as om
 @pifou.lib.Process.cascading
 def post_hide_hidden(node):
     """Hide `hidden` elements"""
-    location = om.Location(node.url.path.as_str)
-    if not om.find(location.path.as_str, 'hidden'):
+    # location = om.Location(node.url.path.as_str)
+    if not om.find(node.path.as_str, 'hidden'):
         return node
 
 
@@ -27,14 +29,16 @@ def pre_junction(node):
 
     """
 
-    junction = om.read(node.url.path.as_str, 'junction')
+    junction = om.read(node.path.as_str, 'junction')
 
     if junction:
         assert isinstance(junction, basestring)
-        junction_path = node.url.path + junction
+        junction_path = node.path + junction
         junction_node = node.copy(path=junction_path)
 
-        return junction_node
+        source.disk.pull(junction_node)
+
+        node = junction_node
 
     return node
 

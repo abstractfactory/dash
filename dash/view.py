@@ -15,17 +15,9 @@ import pigui.widgets.pyqt5.miller.view
 import dash.item
 
 
-class Miller(pigui.widgets.pyqt5.miller.view.DefaultMiller):
-    def __init__(self, *args, **kwargs):
-        super(Miller, self).__init__(*args, **kwargs)
-
-    def column_added_event(self, column):
-        super(Miller, self).column_added_event(column)
-
-
 class List(pigui.widgets.pyqt5.list.view.DefaultList):
 
-    predicate = Miller
+    predicate = pigui.widgets.pyqt5.miller.view.DefaultMiller
 
     def __init__(self, *args, **kwargs):
         super(List, self).__init__(*args, **kwargs)
@@ -35,7 +27,6 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
         super(List, self).item_added_event(item)
 
     def load(self, item):
-        # print "Loading %s" % item
         super(List, self).load(item)
 
         self.append_workspace_items(item)
@@ -58,12 +49,10 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
         asset = pifou.pom.domain.Entity.from_node(item.node)
         for workspace in asset.workspaces('marcus'):
             path = workspace.url.path.as_str
-            node = pifou.pom.node.DirNode.from_str(path)
-            workspace = item.from_node(node)
-            workspace.setdata('parent', item)
+            node = pifou.pom.node.Node.from_str(path)
 
-            workspace.preprocess = item.preprocess.copy()
-            workspace.postprocess = item.postprocess.copy()
+            workspace = item.from_node(node)
+            workspace.data['parent'] = item
 
             self.add_item(workspace)
             self._existing_workspaces.append(node)
@@ -79,7 +68,7 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
 
         new_item = pigui.item.Item.from_name('+')
         new_item.widget.setText('Add workspace')
-        new_item.setdata('parent', item)
+        new_item.data['parent'] = item
         self.add_item(new_item)
 
     def append_workspace_commands(self, item):
@@ -93,8 +82,8 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
 
         for command in ('launch', 'configure', 'remove'):
             command_item = pigui.item.Item.from_type('%s.command' % command)
-            command_item.setdata('command', command)
-            command_item.setdata('subject', item)
+            command_item.data['command'] = command
+            command_item.data['subject'] = item
             pol = command_item.sortpolicy
             pol.position = pol.AlwaysAtBottom
             self.add_item(command_item)
@@ -104,10 +93,11 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
 
 
 def register():
-    Miller.register(List)
+    pigui.widgets.pyqt5.miller.view.DefaultMiller.register(List)
 
 
 if __name__ == '__main__':
+    from pifou.com import source
     import pifou.pom.node
     import pigui.util.pyqt5
 
@@ -117,9 +107,11 @@ if __name__ == '__main__':
     with pigui.util.pyqt5.app_context():
         register()
 
-        node = pifou.pom.node.DirNode.from_str(r'S:\content\jobs\skydivers\content')
+        node = pifou.pom.node.Node.from_str(r'S:\content\jobs\skydivers\content\assets\diver\model_animation_default')
+        source.disk.pull(node)
+
         item = pigui.item.Item.from_node(node)
-        view = Miller()
+        view = pigui.widgets.pyqt5.miller.view.DefaultMiller()
         view.load(item)
         view.resize(300, 500)
         view.show()

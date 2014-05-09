@@ -106,7 +106,7 @@ class Widget(pigui.widgets.pyqt5.application.ApplicationBase):
         def setup_body():
             body = QtWidgets.QWidget()
 
-            miller = dash.view.Miller()
+            miller = pigui.widgets.pyqt5.miller.view.DefaultMiller()
             placeholder_slot = lambda x: self.notify(title="Oops..", message=x)
 
             miller.error.connect(placeholder_slot)
@@ -177,10 +177,10 @@ class Widget(pigui.widgets.pyqt5.application.ApplicationBase):
         #
         if name == 'command':
             item = data[0]
-            subject = item.getdata('subject')
-            # listwidget = subject.getdata('__views__')[0]
+            subject = item.data.get('subject')
+            # listwidget = subject.data.get('__views__')[0]
 
-            command = item.getdata('command')
+            command = item.data.get('command')
 
             #  ____________
             # |            |
@@ -229,7 +229,7 @@ class Widget(pigui.widgets.pyqt5.application.ApplicationBase):
         #
         if name == 'new':
             item, listwidget = data[:2]
-            item = item.getdata('parent')
+            item = item.data.get('parent')
             node = item.node
             apps = self.get_available_applications(node=node) or []
             self.new_workspace_menu(parent=item, apps=apps)
@@ -401,11 +401,10 @@ class Application(object):
 
         # Events
         widget.quitted.connect(self.quit_event)
-        widget.get_available_applications.connect(self.get_available_applications)
+        widget.get_available_applications.connect(
+            self.get_available_applications)
 
     def add_workspace(self, application, parent):
-        # print "Adding workspace"
-        # print "Adding %s to %s" % (application, parent)
 
         workspace = pifou.pom.domain.Workspace.from_node(
             node=parent,
@@ -552,7 +551,7 @@ def get_application():
     if not root_path:
         raise pifou.error.Root
 
-    node = pifou.pom.node.DirNode.from_str(root_path)
+    node = pifou.pom.node.Node.from_str(root_path)
     item = pigui.item.Item.from_node(node)
 
     # ---------- Register node-process ------------- #
@@ -562,8 +561,10 @@ def get_application():
     process = dash.process
     process.USER = user
 
-    node.postprocess.add(process.post_hide_hidden)
-    node.preprocess.add(process.pre_junction)
+    node.children.postprocess.add(process.post_hide_hidden)
+    node.children.preprocess.add(process.pre_junction)
+
+    # print "Loading %s" % node
 
     # ------------- Instantiate widget ---------------------- #
 

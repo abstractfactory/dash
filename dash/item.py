@@ -18,23 +18,31 @@ import pigui.service
 import pigui.widgets.pyqt5.item
 
 
+@pifou.lib.Process.cascading
+def discard_files(node):
+    if node.isparent:
+        return node
+
 # ------------------------- Items ---------------------------------- #
 
 
 class DashboardItem(pigui.widgets.pyqt5.item.TreeItem):
     def __init__(self, *args, **kwargs):
         super(DashboardItem, self).__init__(*args, **kwargs)
+
+        self.node.children.postprocess.add(discard_files)
+
         self.widget.open_in_about.connect(self.open_in_about)
         self.widget.open_in_explorer.connect(self.open_in_explorer)
         self.widget.hide.connect(self.hide_event)
-        self.widget.setText(self.name)
+        # self.widget.setText(self.name)
 
     def open_in_about(self):
         path = self.node.url.path.as_str
         pigui.service.open_in_about(path)
 
     def open_in_explorer(self):
-        self.setdata('debug', 'explore')
+        self.data['debug'] = 'explore'
         self.event.emit(name='debug', data=[self])
 
         path = self.node.url.path.as_str
@@ -188,7 +196,7 @@ if __name__ == '__main__':
     import pigui.util.pyqt5
     with pigui.util.pyqt5.app_context():
         path = r'S:\content\jobs\skydivers'
-        node = pifou.pom.node.DirNode.from_str(path)
+        node = pifou.pom.node.Node.from_str(path)
         item = pigui.item.Item.from_node(node)
         
         for child in item:
