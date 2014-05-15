@@ -1,41 +1,33 @@
 
 """Dashboard-specific items"""
 
-import openmetadata as om
-
 # pifou library
 import pifou
+import pifou.om
 import pifou.signal
 import pifou.pom.domain
 
 # pifou dependencies
 from PyQt5 import QtWidgets
-# from PyQt5 import QtCore
 
 # pigui library
 import pigui.item
 import pigui.service
 import pigui.widgets.pyqt5.item
 
-
-@pifou.lib.Process.cascading
-def discard_files(node):
-    if node.isparent:
-        return node
-
-# ------------------------- Items ---------------------------------- #
+# local library
+import dash.process
 
 
 class DashboardItem(pigui.widgets.pyqt5.item.TreeItem):
     def __init__(self, *args, **kwargs):
         super(DashboardItem, self).__init__(*args, **kwargs)
 
-        self.node.children.postprocess.add(discard_files)
+        self.node.children.postprocess.add(dash.process.discard_files)
 
         self.widget.open_in_about.connect(self.open_in_about)
         self.widget.open_in_explorer.connect(self.open_in_explorer)
         self.widget.hide.connect(self.hide_event)
-        # self.widget.setText(self.name)
 
     def open_in_about(self):
         path = self.node.url.path.as_str
@@ -50,7 +42,7 @@ class DashboardItem(pigui.widgets.pyqt5.item.TreeItem):
 
     def hide_event(self):
         path = self.node.url.path.as_str
-        om.write(path, 'hidden', None)
+        pifou.om.write(path, 'hidden', None)
 
 
 class WorkspaceItem(pigui.widgets.pyqt5.item.TreeItem):
@@ -97,8 +89,6 @@ class AppItem(pigui.widgets.pyqt5.item.TreeItem):
 
 class AppWidget(pigui.widgets.pyqt5.item.ItemWidget):
     pass
-
-# --------------------- Widgets -------------------------- #
 
 
 class DashboardWidget(pigui.widgets.pyqt5.item.TreeWidget):
@@ -183,12 +173,9 @@ def register():
     pigui.item.Item.register(DashboardFamily)
     pigui.item.Item.register(WorkspaceFamily)
     pigui.item.Item.register(AppFamily)
-    # print "registry: %s" % pigui.item.Item.registry
-    # pigui.item.Item.register(NewWorkspaceFamily)
 
 
 if __name__ == '__main__':
-    # from pifou.pom.node import ConcreteNode
     import pifou.pom.node
 
     register()
@@ -202,6 +189,4 @@ if __name__ == '__main__':
         for child in item:
             pass
 
-        # print [c for c in item]
-        # print repr(item)
         item.widget.show()
