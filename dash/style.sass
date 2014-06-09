@@ -1,0 +1,47 @@
+
+$dark:      rgb(25, 25, 25)
+$mid:       rgb(50, 50, 50)
+$bright:    rgb(75, 75, 75)
+
+$red:       hsl(0, 50%, 50%)
+$brown:     hsl(20%, 50%, 30%)
+$green:     hsl(85%, 50%, 30%)
+$highlight: hsl(35%, 50%, 80%)
+
+@mixin outset
+    border-style: solid
+    border-width: 1px
+    border-left-color: lighten($bright, 10%)
+    border-right-color: darken($bright, 10%)
+    border-top-color: lighten($bright, 10%)
+    border-bottom-color: darken($bright, 10%)
+
+
+@mixin inset
+    border-style: solid
+    border-width: 1px
+    border-left-color: darken($mid, 5%)
+    border-right-color: lighten($mid, 20%)
+    border-top-color: darken($mid, 5%)
+    border-bottom-color: lighten($mid, 20%)
+
+
+Dash
+    #Canvas
+        @include inset
+        background-color: $mid
+
+
+    WorkspaceItem, AppItem
+        @include inset
+        background-color: $mid
+        min-height: 40px
+        min-width: 70px
+        margin: 3px 3px 0px 3px
+        padding-left: 3px
+        text-align: left
+        border-right: 3px solid $red
+
+        &:hover
+            background-color: $brown
+

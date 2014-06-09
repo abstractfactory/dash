@@ -90,5 +90,5 @@ def main(path, debug=False):
 
 if __name__ == '__main__':
     path = get_root()
-    # main(path, debug=True)
-    request_application(path)
+    main(path, debug=True)
+    # request_application(path)

@@ -1,11 +1,12 @@
-ApplicationBase > #Header {
-  background-image: url("title_dash"); }
-ApplicationBase Create #Icon {
-  background-image: url("icon_newnode");
-  min-width: 23;
-  min-height: 30; }
-
-WorkspaceWidget, AppWidget {
+Dash #Canvas {
+  border-style: solid;
+  border-width: 1px;
+  border-left-color: #252525;
+  border-right-color: #656565;
+  border-top-color: #252525;
+  border-bottom-color: #656565;
+  background-color: #323232; }
+Dash WorkspaceItem, Dash AppItem {
   border-style: solid;
   border-width: 1px;
   border-left-color: #252525;
@@ -19,5 +20,5 @@ WorkspaceWidget, AppWidget {
   padding-left: 3px;
   text-align: left;
   border-right: 3px solid #bf4040; }
-  WorkspaceWidget:hover, AppWidget:hover {
+  Dash WorkspaceItem:hover, Dash AppItem:hover {
     background-color: #734026; }

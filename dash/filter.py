@@ -1,21 +1,18 @@
 
 import pifou.om
-import pifou.lib
-import pifou.pom.node
-import pifou.pom.domain
+import pifou.filter
 
 from pifou.com import source
 
 
-@pifou.lib.Process.cascading
+@pifou.filter.Operator.cascading
 def post_hide_hidden(node):
     """Hide `hidden` elements"""
-    # location = om.Location(node.url.path.as_str)
     if not pifou.om.find(node.path.as_str, 'hidden'):
         return node
 
 
-@pifou.lib.Process.cascading
+@pifou.filter.Operator.cascading
 def pre_junction(node):
     """Forward junctions to target `goto`
         _________
@@ -39,7 +36,7 @@ def pre_junction(node):
     return node
 
 
-@pifou.lib.Process.cascading
+@pifou.filter.Operator.cascading
 def discard_files(node):
     if node.isparent:
         return node

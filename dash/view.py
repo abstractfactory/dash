@@ -15,9 +15,7 @@ import pigui.widgets.pyqt5.miller.view
 import dash.item
 
 
-class List(pigui.widgets.pyqt5.list.view.DefaultList):
-
-    predicate = pigui.widgets.pyqt5.miller.view.DefaultMiller
+class List(pigui.pyqt5.widgets.list.view.DefaultList):
 
     def __init__(self, *args, **kwargs):
         super(List, self).__init__(*args, **kwargs)
@@ -66,8 +64,7 @@ class List(pigui.widgets.pyqt5.list.view.DefaultList):
 
         """
 
-        new_item = pigui.item.Item.from_name('+')
-        new_item.widget.setText('Add workspace')
+        new_item = pigui.item.Item.from_name('new.+')
         new_item.data['parent'] = item
         self.add_item(new_item)
 
@@ -113,5 +110,5 @@ if __name__ == '__main__':
         item = pigui.item.Item.from_node(node)
         view = pigui.widgets.pyqt5.miller.view.DefaultMiller()
         view.load(item)
-        view.resize(300, 500)
+        view.resize(600, 300)
         view.show()
