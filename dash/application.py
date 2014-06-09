@@ -1,7 +1,12 @@
+
+# standard library
 import os
 import subprocess
 
+# pifou library
 import pifou.lib
+
+# local library
 import dash.widget
 
 

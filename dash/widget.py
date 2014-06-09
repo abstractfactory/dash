@@ -13,7 +13,8 @@ import pigui.service
 import pigui.pyqt5.event
 import pigui.pyqt5.model
 import pigui.pyqt5.widgets.miller.view
-import pigui.pyqt5.widgets.window.widget
+# import pigui.pyqt5.widgets.window.widget
+import pigui.pyqt5.widgets.application.widget
 
 # pigui dependency
 from PyQt5 import QtCore
@@ -71,7 +72,7 @@ class Miller(pigui.pyqt5.widgets.miller.view.DefaultMiller):
         return model
 
 
-class Dash(pigui.pyqt5.widgets.window.widget.WindowBase):
+class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
     launch = QtCore.pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
@@ -111,7 +112,8 @@ class Dash(pigui.pyqt5.widgets.window.widget.WindowBase):
 
         elif type == dash.event.Type.CommandEvent:
             if event.command == 'launch':
-                self.launch.emit(event.path)
+                if self.confirm("{}\n\nLaunch?".format(event.path)):
+                    self.launch.emit(event.path)
 
         return super(Dash, self).event(event)
 
