@@ -26,15 +26,15 @@ class TreeItem(pigui.pyqt5.widgets.item.TreeItem):
         label = action.text()
 
         if label == "Open in About":
-            event = dash.event.OpenInAboutEvent(path=self.path)
+            event = dash.event.OpenInAboutEvent(index=self.index)
             QtWidgets.QApplication.postEvent(self, event)
 
         elif label == "Open in Explorer":
-            event = dash.event.OpenInExplorerEvent(path=self.path)
+            event = dash.event.OpenInExplorerEvent(index=self.index)
             QtWidgets.QApplication.postEvent(self, event)
 
         elif label == "Hide":
-            event = dash.event.HideEvent(path=self.path)
+            event = dash.event.HideEvent(index=self.index)
             QtWidgets.QApplication.postEvent(self, event)
 
     def contextMenuEvent(self, event):
@@ -62,15 +62,13 @@ class CommandItem(TreeItem):
     def sort_key(self):
         return '{'
 
-    def __init__(self, path, command):
-        super(CommandItem, self).__init__(path)
-        self.setText(command)
-        self.command = command
+    # def __init__(self, path, command):
+    #     super(CommandItem, self).__init__(path)
+    #     self.setText(command)
+    #     self.command = command
 
     def selected_event(self):
-        event = dash.event.CommandEvent(
-            path=self.path,
-            command=self.command)
+        event = dash.event.CommandEvent(index=self.index)
         QtWidgets.QApplication.postEvent(self, event)
 
 
@@ -85,11 +83,11 @@ def from_path(path):
         args = list()
         kwargs = dict()
         for arg in args_list:
-            if not "=" in arg:
-                args.append(arg)
-            else:
+            if "=" in arg:
                 key, value = arg.split("=")
                 kwargs[key] = value
+            else:
+                args.append(arg)
 
     # Determine item-type
     item = None

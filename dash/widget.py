@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
-import itertools
+import getpass
 
 # pifou library
+import pifou.om
 import pifou.filter
 import pifou.pom.node
 import pifou.pom.domain
@@ -12,8 +13,9 @@ import pigui.style
 import pigui.service
 import pigui.pyqt5.event
 import pigui.pyqt5.model
+import pigui.pyqt5.widgets.item
+import pigui.pyqt5.widgets.list.view
 import pigui.pyqt5.widgets.miller.view
-# import pigui.pyqt5.widgets.window.widget
 import pigui.pyqt5.widgets.application.widget
 
 # pigui dependency
@@ -28,64 +30,81 @@ import dash.settings
 pigui.style.register('dash')
 
 
-class Model(pigui.pyqt5.model.FileSystemModel):
-    def children(self, path):
+class Model(pigui.pyqt5.model.UriModel):
+    def pull(self, index):
+        super(Model, self).pull(index)
 
-        def workspaces(path):
+        root = self.indexes[index]
+        path = root.path
+        scheme = root.scheme
+
+        if scheme == 'disk':
+            # Add workspaces
+            user = getpass.getuser()
             node = pifou.pom.node.Node.from_str(path)
             asset = pifou.pom.domain.Entity.from_node(node)
-            for workspace in asset.workspaces('marcus'):
-                path = workspace.path.as_str
-                yield path
+            for workspace in asset.workspaces(user):
+                full_path = workspace.path.as_str
+                idx = self.create_index()
 
-        def workspace_commands(path):
-            for command in ('launch', 'configure', 'remove'):
-                yield "{path}?type=command#command={command}".format(
-                    path=path,
-                    command=command)
+                uri = scheme + ":" + full_path + "?workspace"
 
-        iterators = [super(Model, self).children(path)]
-        iterators.append(workspaces(path))
+                item = self.create_item(uri=uri, parent=root)
+                item.index = idx
+                self.indexes[idx] = item
 
-        if path.endswith('.workspace'):
-            iterators.append(workspace_commands(path))
+            # Add workspace commands
+            if path.endswith('.workspace'):
+                for command in ('launch', 'configure', 'remove'):
+                    idx = self.create_index()
 
-        for child in itertools.chain(*iterators):
-            yield child
+                    uri = 'command:' + path + '?' + command
 
-
-class List(pigui.pyqt5.widgets.list.view.DefaultList):
-    def create_item(self, path):
-        item = dash.item.from_path(path)
-        return item
+                    item = self.create_item(uri=uri, parent=root)
+                    item.index = idx
+                    self.indexes[idx] = item
 
 
-class Miller(pigui.pyqt5.widgets.miller.view.DefaultMiller):
-    def create_list(self):
-        lis = List()
-        return lis
+def create_item(self, label, index, parent=None):
+    model_item = self.model.item(index)
 
-    def create_model(self):
-        model = Model()
-        model.postfilter.add(dash.filter.discard_files)
-        model.postfilter.add(pifou.filter.post_hide_hidden)
-        return model
+    scheme = model_item.scheme
+    args, kwargs = model_item.options
+
+    if 'workspace' in args:
+        return dash.item.WorkspaceItem(label, index, parent)
+
+    if scheme == 'command':
+        command = args[0]
+        return dash.item.CommandItem(command, index, parent)
+
+    item = dash.item.TreeItem(label, index, parent)
+    return item
+
+
+# Monkey-patch ListView
+pigui.pyqt5.widgets.list.view.DefaultList.create_item = create_item
 
 
 class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
     launch = QtCore.pyqtSignal(str)
 
-    def __init__(self, *args, **kwargs):
-        super(Dash, self).__init__(*args, **kwargs)
+    def __init__(self, parent=None):
+        super(Dash, self).__init__(parent)
 
         # Pad the view, and inset background via CSS
         canvas = QtWidgets.QWidget()
         canvas.setObjectName('Canvas')
 
-        view = Miller()
+        # model = pigui.pyqt5.model.UriModel()
+        model = Model()
+
+        view = pigui.pyqt5.widgets.miller.view.DefaultMiller()
         view.setObjectName('View')
         view.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
                            QtWidgets.QSizePolicy.MinimumExpanding)
+
+        view.set_model(model)
 
         layout = QtWidgets.QHBoxLayout(canvas)
         layout.setContentsMargins(1, 1, 1, 1)
@@ -100,20 +119,25 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
 
         self.set_widget(widget)
 
-    def setup(self, path):
-        view = self.findChild(QtWidgets.QWidget, 'View')
-        view.add_list(path)
+        self.view = view
+        self.model = model
+
+    def setup(self, uri):
+        self.model.setup(uri)
 
     def event(self, event):
         type = event.type()
 
         if type == dash.event.Type.OpenInExplorerEvent:
-            pigui.service.open_in_explorer(event.path)
+            item = self.model.item(event.index)
+            pigui.service.open_in_explorer(item.path)
 
         elif type == dash.event.Type.CommandEvent:
-            if event.command == 'launch':
-                if self.confirm("{}\n\nLaunch?".format(event.path)):
-                    self.launch.emit(event.path)
+            item = self.model.item(event.index)
+            print item.path
+            # if event.command == 'launch':
+            #     if self.confirm("{}\n\nLaunch?".format(event.path)):
+            #         self.launch.emit(event.path)
 
         return super(Dash, self).event(event)
 
@@ -124,6 +148,6 @@ if __name__ == '__main__':
     with pigui.pyqt5.util.application_context():
         win = Dash()
 
-        win.setup('/c/studio/content')
+        win.setup(uri=r'disk:c:\studio\content')
         win.resize(*dash.settings.WINDOW_SIZE)
         win.show()

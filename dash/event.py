@@ -1,33 +1,31 @@
 
-from pigui.pyqt5.event import BaseEvent, Type
+from pigui.pyqt5.event import BaseEvent, ItemEvent, Type
 
 
-class PathEvent(BaseEvent):
-    def __init__(self, path):
-        super(PathEvent, self).__init__()
-        self.path = path
+# class PathEvent(BaseEvent):
+#     def __init__(self, path):
+#         super(PathEvent, self).__init__()
+#         self.path = path
 
 
 @Type.register
-class OpenInExplorerEvent(PathEvent):
+class OpenInExplorerEvent(ItemEvent):
     pass
 
 
 @Type.register
-class OpenInAboutEvent(PathEvent):
+class OpenInAboutEvent(ItemEvent):
     pass
 
 
 @Type.register
-class HideEvent(PathEvent):
+class HideEvent(ItemEvent):
     pass
 
 
 @Type.register
-class CommandEvent(PathEvent):
-    def __init__(self, path, command):
-        super(CommandEvent, self).__init__(path)
-        self.command = command
+class CommandEvent(ItemEvent):
+    pass
 
 
 @Type.register
