@@ -2,25 +2,27 @@ Dash #Canvas {
   border-style: solid;
   border-width: 1px;
   border-left-color: #252525;
-  border-right-color: #656565;
+  border-right-color: #4c4c4c;
   border-top-color: #252525;
-  border-bottom-color: #656565;
+  border-bottom-color: #4c4c4c;
   background-color: #323232; }
 Dash WorkspaceItem, Dash AppItem {
   border-style: solid;
   border-width: 1px;
   border-left-color: #252525;
-  border-right-color: #656565;
+  border-right-color: #4c4c4c;
   border-top-color: #252525;
-  border-bottom-color: #656565;
+  border-bottom-color: #4c4c4c;
   background-color: #191919;
-  min-height: 40px;
-  min-width: 70px;
   margin: 3px 3px 0px 3px;
   padding-left: 3px;
   text-align: left;
   border-right: 3px solid #bf4040; }
   Dash WorkspaceItem:hover, Dash AppItem:hover {
     background-color: #734026; }
+  Dash WorkspaceItem:pressed, Dash AppItem:pressed {
+    background-color: #995533; }
+  Dash WorkspaceItem:pressed:hover, Dash AppItem:pressed:hover {
+    background-color: lighter(#734026, 15%); }
 Dash CommandItem {
   background-color: #191919; }

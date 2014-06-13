@@ -21,9 +21,9 @@ $highlight: hsl(35%, 50%, 80%)
     border-style: solid
     border-width: 1px
     border-left-color: darken($mid, 5%)
-    border-right-color: lighten($mid, 20%)
+    border-right-color: lighten($mid, 10%)
     border-top-color: darken($mid, 5%)
-    border-bottom-color: lighten($mid, 20%)
+    border-bottom-color: lighten($mid, 10%)
 
 
 Dash
@@ -35,8 +35,8 @@ Dash
     WorkspaceItem, AppItem
         @include inset
         background-color: $dark
-        min-height: 40px
-        min-width: 70px
+        // min-height: 30px
+        // min-width: 70px
         margin: 3px 3px 0px 3px
         padding-left: 3px
         text-align: left
@@ -44,6 +44,12 @@ Dash
 
         &:hover
             background-color: $brown
+
+        &:pressed
+            background-color: lighten($brown, 10%)
+
+        &:pressed:hover
+            background-color: lighter($brown, 15%)
 
     CommandItem
         background-color: $dark

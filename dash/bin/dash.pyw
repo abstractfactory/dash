@@ -44,19 +44,22 @@ log = logging.getLogger('dash')
 log.setLevel(logging.WARNING)
 
 if __name__ == '__main__':
+    check_dependencies()
+    add_to_path()
+
+    import dash.version
+
     message = '''
  ____________
 |            |
-| Dash 0.5.2 |
+| Dash {} |
 |____________|
 
 Press CTRL-C to quit..
 
 -----------------------
-'''
+'''.format(dash.version.version)
     print message
-    check_dependencies()
-    add_to_path()
 
     import dash.presentation
     path = get_path()
@@ -64,6 +67,3 @@ Press CTRL-C to quit..
 
     print "I: running Dash @ %r" % path
     dash.presentation.main(path)
-
-    path = dash.presentation.get_root()
-    dash.presentation.request_application(path)

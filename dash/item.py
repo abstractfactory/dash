@@ -62,54 +62,9 @@ class CommandItem(TreeItem):
     def sort_key(self):
         return '{'
 
-    # def __init__(self, path, command):
-    #     super(CommandItem, self).__init__(path)
-    #     self.setText(command)
-    #     self.command = command
-
     def selected_event(self):
         event = dash.event.CommandEvent(index=self.index)
         QtWidgets.QApplication.postEvent(self, event)
-
-
-def from_path(path):
-    # Parse keyword-arguments
-    kwargs = list()
-
-    if "?" in path:
-        path, args_string = path.rsplit("?")
-        args_list = args_string.split("#")
-
-        args = list()
-        kwargs = dict()
-        for arg in args_list:
-            if "=" in arg:
-                key, value = arg.split("=")
-                kwargs[key] = value
-            else:
-                args.append(arg)
-
-    # Determine item-type
-    item = None
-
-    if 'type' in kwargs:
-        typ = kwargs.get('type')
-
-        if typ == 'command':
-            command = kwargs.get('command')
-            item = CommandItem(path, command)
-
-    if not item:
-        if path.endswith('.workspace'):
-            item = WorkspaceItem(path)
-
-        elif path.endswith('$command'):
-            item = CommandItem(path)
-
-        else:
-            item = TreeItem(path)
-
-    return item
 
 
 if __name__ == '__main__':
