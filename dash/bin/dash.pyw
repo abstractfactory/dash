@@ -31,14 +31,6 @@ def get_path():
     return path
 
 
-def init_cwd():
-    # Make working directory local to Dash,
-    # regardless of where this executable is being run from.
-    # (This is important for local stylesheets to have any effect)
-    working_directory = os.path.dirname(dash.presentation.__file__)
-    os.chdir(working_directory)
-
-
 import logging
 log = logging.getLogger('dash')
 log.setLevel(logging.WARNING)
@@ -63,7 +55,6 @@ Press CTRL-C to quit..
 
     import dash.presentation
     path = get_path()
-    init_cwd()
 
     print "I: running Dash @ %r" % path
     dash.presentation.main(path)

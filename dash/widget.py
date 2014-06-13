@@ -2,6 +2,9 @@ from __future__ import absolute_import
 
 import getpass
 
+# pifou library
+import pifou.lib
+
 # pigui library
 import pigui.style
 import pigui.service
@@ -25,13 +28,14 @@ pigui.style.register('dash')
 dash.view.monkey_path()
 
 
+@pifou.lib.log
 class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
     """Dash view"""
 
     launch = QtCore.pyqtSignal(str)  # index
     remove = QtCore.pyqtSignal(str)  # index
-    add_workspace = QtCore.pyqtSignal(str)  # index
     _restore = QtCore.pyqtSignal()  # Restore UI from tray
+    add_workspace = QtCore.pyqtSignal(str)  # index
 
     def __init__(self, parent=None):
         super(Dash, self).__init__(parent)
@@ -61,14 +65,12 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         self.view = view
         self.model = None
 
+        self.setup_tray()
         self._restore.connect(self.restore)
 
     def set_model(self, model):
         self.view.set_model(model)
         self.model = model
-
-    # def setup(self, uri):
-    #     self.model.setup(uri)
 
     def event(self, event):
         type = event.type()
@@ -96,6 +98,20 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
                 if self.confirm("{}\n\nRemove?".format(item.path)):
                     self.remove.emit(event.index)
 
+        elif type == QtCore.QEvent.Show:
+            self.setProperty('is_shown', True)
+
+        elif type == QtCore.QEvent.Close:
+            tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
+            if tray.isVisible():
+                if not self.property('user_knows'):
+                    tray.showMessage('Information',
+                                     'Dashboard is still running!')
+                self.setProperty('user_knows', True)
+
+                event.ignore()
+                return False
+
         return super(Dash, self).event(event)
 
     def new_workspace_menu(self, index):
@@ -119,22 +135,66 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
             item.set_data(role='app', value=app)
             self.add_workspace.emit(index)
 
+    def setup_tray(self):
+        tray = QtWidgets.QSystemTrayIcon(self)
+        tray.setIcon(QtGui.QIcon('icon_dashboard_16x16.png'))
+
+        tray.activated.connect(self.tray_activated_event)
+
+        restore = QtWidgets.QAction('&Restore', self, triggered=self.restore)
+        quit_ = QtWidgets.QAction('&Quit', self, triggered=self.quit)
+
+        menu = QtWidgets.QMenu(self)
+        for action in (restore, quit_):
+            menu.addAction(action)
+
+        tray.setContextMenu(menu)
+        tray.setObjectName('Tray')
+        tray.show()
+
+    def remove_tray(self):
+        tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
+        if tray:
+            tray.hide()
+
+    def tray_activated_event(self, reason):
+        """Tray icon was clicked"""
+        if reason != QtWidgets.QSystemTrayIcon.Trigger:
+            return
+
+        self.animated_show()
+        self.restore()
+
     def restore(self):
         """Restore window"""
         self.raise_()
         self.activateWindow()
         self.showNormal()
+        self.animated_show()
 
-        if not self.isVisible():
-            self.animated_show()
+    def quit(self):
+        """Right-clicking on tray-icon and quitting permanently"""
+        self.log.info("Removing tray icon")
+        tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
+        tray.hide()
+
+        self.log.info("Quitting Dashboard")
+        animation = self.window_fade_out()
+        animation.finished.connect(QtWidgets.QApplication.instance().quit)
+
+        self.close()
 
 
 if __name__ == '__main__':
     import pigui.pyqt5.util
 
     with pigui.pyqt5.util.application_context():
-        win = Dash()
 
-        # win.setup(uri=r'disk:c:\studio\content')
+        model = dash.model.Model()
+
+        win = Dash()
+        win.set_model(model)
         win.resize(*dash.settings.WINDOW_SIZE)
         win.show()
+
+        model.setup(uri=r'disk:c:\studio\content')

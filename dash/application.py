@@ -39,7 +39,8 @@ class Dash(object):
         while True:
             message = self.rep.recv_json()
             if 'restore' in message:
-                self.widget._restore.emit()
+                if not self.widget.property('is_shown'):
+                    self.widget._restore.emit()
             self.rep.send_json({'status': 'ok'})
 
     def set_widget(self, widget):
