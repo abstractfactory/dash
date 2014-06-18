@@ -25,7 +25,7 @@ import dash.settings
 
 pigui.style.register('dash')
 
-dash.view.monkey_path()
+dash.view.monkey_patch()
 
 
 @pifou.lib.log

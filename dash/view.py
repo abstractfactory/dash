@@ -1,6 +1,8 @@
 import dash.item
 import pigui.pyqt5.widgets.list.view
 
+DefaultList = pigui.pyqt5.widgets.list.view.DefaultList
+
 
 def create_item(self, label, index, parent=None):
     model_item = self.model.item(index)
@@ -23,6 +25,7 @@ def create_item(self, label, index, parent=None):
     return item
 
 
-def monkey_path():
-    # Monkey-patch ListView
-    pigui.pyqt5.widgets.list.view.DefaultList.create_item = create_item
+def monkey_patch():
+    """The alteration is minimal enough for
+    a monkey-patch to suffice"""
+    DefaultList.create_item = create_item
