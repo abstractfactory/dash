@@ -1,3 +1,13 @@
+"""Dash, software-configuration for artists
+
+Usage:
+    This controller is designed to work together with application.py
+    which provides higher-level logic such as actially running software.
+
+    application.py is listening on Dash.launch which emits a plain-path
+
+"""
+
 from __future__ import absolute_import
 
 # standard library
@@ -24,17 +34,27 @@ import dash.model
 import dash.settings
 
 pigui.style.register('dash')
-
 dash.view.monkey_patch()
 
 
 @pifou.lib.log
 class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
-    """Dash view"""
+    """Dash Controller
+
+    Signals:
+        launch (str): Emits plain-path of workspace to launch.
+
+    """
 
     launch = QtCore.pyqtSignal(str)  # index
 
     def __init__(self, parent=None):
+        """
+        Arguments:
+            parent (QtWidgets.QWidget): Qt parent of this widget
+
+        """
+
         super(Dash, self).__init__(parent)
 
         # Pad the view, and inset background via CSS
@@ -63,6 +83,13 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         self.model = None
 
     def set_model(self, model):
+        """Set model for this controller
+
+        Arguments:
+            model (pifou.pyqt5.model.Model): Target model
+
+        """
+
         self.view.set_model(model)
         self.model = model
         model.status.connect(self.status_event)
@@ -79,9 +106,32 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         """
 
         def add_item(index):
-            self.add_workspace_menu(event.index)
+            """Footer has been pressed
+
+            Arguments:
+                index (str): Index of footer which was pressed
+
+            """
+
+            if self.model.data(index, 'type') == pigui.pyqt5.model.Footer:
+                index = self.model.item(index).parent.index
+
+            if self.model.data(index, 'type') == 'workspace':
+                # Workspaces only list commands. Clicking the
+                # footer within this list shouldn't do anything.
+                # TODO: Remove footer from command-lists.
+                return
+
+            self.add_workspace_menu(index)
 
         def command(index):
+            """A command delegate was pressed
+
+            Arguments:
+                index (str): Index of command
+
+            """
+
             command = self.model.data(event.index, 'command')
 
             if command == 'launch':
@@ -102,10 +152,24 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
                     self.model.remove_workspace(event.index)
 
         def open_explorer(index):
+            """Open `index` in file-system explorer
+
+            Arguments:
+                index (str): Index to open
+
+            """
+
             path = self.model.data(event.index, 'path')
             pigui.service.open_in_explorer(path)
 
         def open_about(index):
+            """Open `index` in About
+
+            Arguments:
+                index (str): Index to open
+
+            """
+
             path = self.model.data(event.index, 'path')
             pigui.service.open_in_about(path)
 
@@ -126,9 +190,24 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         return super(Dash, self).event(event)
 
     def status_event(self, message):
+        """Notify user of events from model
+
+        Arguments:
+            message (str): Short message for user
+
+        """
+
         self.notify(message)
 
     def add_workspace(self, application, index):
+        """Add `application` to `index`
+
+        Arguments:
+            application (str): Name of application to add
+            index (str): Parent of new workspace
+
+        """
+
         user = getpass.getuser()
         path = self.model.data(index, 'path')
 
@@ -142,9 +221,17 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
                                  index=index)
 
     def add_workspace_menu(self, index):
+        """Open menu with possible workspaces for `index`
+
+        Arguments:
+            index (str): Source index for available workspaces
+
+        """
+
         menu = QtWidgets.QMenu(self)
 
         path = self.model.data(index, 'path')
+        assert path, self.model.item(index)._data
         location = pifou.om.Location(path)
         entry = pifou.om.Entry('apps', parent=location)
         pifou.om.inherit(entry)

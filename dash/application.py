@@ -1,10 +1,10 @@
 
 # standard library
 import os
-import getpass
 import subprocess
 
 # pifou library
+import pifou.om
 import pifou.lib
 import pifou.pom.node
 import pifou.pom.domain
@@ -15,10 +15,6 @@ import pifou.com.source
 # local library
 import dash.model
 import dash.controller
-
-# pifou dependency
-import zmq
-context = zmq.Context.instance()
 
 
 class Dash(object):
@@ -50,8 +46,7 @@ class Dash(object):
 
         """
 
-        item = self.model.item(index)
-        path = item.path
+        path = self.model.data(index, 'path')
 
         basename = os.path.basename(path)
         app, _ = os.path.splitext(basename)
@@ -63,6 +58,16 @@ class Dash(object):
 
         print "running %s" % exe
         subprocess.Popen(exe)
+
+    def kwargs_from_workspace(self, root, application):
+        """Fetch keyword arguments from `root` for `application`
+
+        Arguments:
+            root (str): Absolute path to workspace
+
+        """
+
+        raise NotImplemented
 
 
 if __name__ == '__main__':
@@ -80,4 +85,4 @@ if __name__ == '__main__':
         model.setup('c:\studio\content')
 
         win.resize(*dash.settings.WINDOW_SIZE)
-        win.show()
+        win.animated_show()

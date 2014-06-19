@@ -56,15 +56,11 @@ class FileDelegate(pigui.pyqt5.widgets.delegate.FileDelegate):
 
 
 class WorkspaceDelegate(FolderDelegate):
-    @property
-    def sort_key(self):
-        return '{'
+    pass
 
 
 class CommandDelegate(FolderDelegate):
-    @property
-    def sort_key(self):
-        return '{'
+    pass
 
     def selected_event(self):
         event = dash.event.CommandEvent(index=self.index)
@@ -80,10 +76,6 @@ if __name__ == '__main__':
     with pigui.pyqt5.util.application_context():
         path = r'S:\content\jobs\skydivers'
         node = pifou.pom.node.Node.from_str(path)
-        # delegate = pigui.pyqt5.widgets.delegate.Delegate.from_node(node)
         delegate = FolderDelegate(node.path.as_str, index='hello')
-
-        # for child in delegate:
-            # pass
 
         delegate.show()
