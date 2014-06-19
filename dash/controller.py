@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+# standard library
 import getpass
 
 # pifou library
@@ -18,7 +19,6 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 # local library
-import dash.item
 import dash.view
 import dash.model
 import dash.settings
@@ -33,9 +33,6 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
     """Dash view"""
 
     launch = QtCore.pyqtSignal(str)  # index
-    remove = QtCore.pyqtSignal(str)  # index
-    _restore = QtCore.pyqtSignal()  # Restore UI from tray
-    add_workspace = QtCore.pyqtSignal(str)  # index
 
     def __init__(self, parent=None):
         super(Dash, self).__init__(parent)
@@ -65,127 +62,117 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         self.view = view
         self.model = None
 
-        self.setup_tray()
-        self._restore.connect(self.restore)
-
     def set_model(self, model):
         self.view.set_model(model)
         self.model = model
+        model.status.connect(self.status_event)
 
     def event(self, event):
-        type = event.type()
+        """Event handlers
 
-        if type == dash.event.Type.OpenInExplorerEvent:
-            item = self.model.item(event.index)
-            pigui.service.open_in_explorer(item.path)
+        Handled events:
+            AddItemEvent -- A workspace is being added
+            CommandEvent -- A command is being executed
+            OpenInExplorerEvent -- An item is being explored
+            OpenInAboutEvent -- An item is being explored, in About
 
-        elif type == pigui.pyqt5.event.Type.AddItemEvent:
-            self.new_workspace_menu(event.index)
+        """
 
-        elif type == dash.event.Type.CommandEvent:
-            item = self.model.item(event.index)
-            args, kwargs = item.options
-            command = kwargs.get('command')
+        def add_item(index):
+            self.add_workspace_menu(event.index)
+
+        def command(index):
+            command = self.model.data(event.index, 'command')
 
             if command == 'launch':
-                if self.confirm("{}\n\nLaunch?".format(item.path)):
+                path = self.model.data(event.index, 'path')
+                message = path + "\n\n" + "Launch?"
+                if self.confirm(message):
                     self.launch.emit(event.index)
 
             if command == 'configure':
-                pass
+                path = self.model.data(event.index, 'path')
+                pigui.service.open_in_about(path)
+                self.notify('Configuring')
 
             if command == 'remove':
-                if self.confirm("{}\n\nRemove?".format(item.path)):
-                    self.remove.emit(event.index)
+                path = self.model.data(event.index, 'path')
+                message = path + "\n\n" + "Remove?"
+                if self.confirm(message):
+                    self.model.remove_workspace(event.index)
 
-        elif type == QtCore.QEvent.Show:
-            self.setProperty('is_shown', True)
+        def open_explorer(index):
+            path = self.model.data(event.index, 'path')
+            pigui.service.open_in_explorer(path)
 
-        elif type == QtCore.QEvent.Close:
-            tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
-            if tray.isVisible():
-                if not self.property('user_knows'):
-                    tray.showMessage('Information',
-                                     'Dashboard is still running!')
-                self.setProperty('user_knows', True)
+        def open_about(index):
+            path = self.model.data(event.index, 'path')
+            pigui.service.open_in_about(path)
 
-                event.ignore()
-                return False
+        # Handled events
+        AddItemEvent = pigui.pyqt5.event.Type.AddItemEvent
+        CommandEvent = dash.event.Type.CommandEvent
+        OpenInExplorerEvent = dash.event.Type.OpenInExplorerEvent
+        OpenInAboutEvent = dash.event.Type.OpenInAboutEvent
+
+        handler = {AddItemEvent: add_item,
+                   CommandEvent: command,
+                   OpenInExplorerEvent: open_explorer,
+                   OpenInAboutEvent: open_about}.get(event.type())
+
+        if handler:
+            handler(event.index)
 
         return super(Dash, self).event(event)
 
-    def new_workspace_menu(self, index):
+    def status_event(self, message):
+        self.notify(message)
+
+    def add_workspace(self, application, index):
+        user = getpass.getuser()
+        path = self.model.data(index, 'path')
+
+        node = pifou.pom.node.Node.from_str(path)
+        workspace = pifou.pom.domain.Workspace.from_node(
+            node=node,
+            user=user,
+            application=application)
+
+        self.model.add_workspace(path=workspace.path.as_str,
+                                 index=index)
+
+    def add_workspace_menu(self, index):
         menu = QtWidgets.QMenu(self)
 
-        # Temporarily hard-coded, until Content Object Model*
-        for app in ('maya2014-x64', 'nuke-8.0', 'ae-cc', 'zbrush-r6'):
-            action = QtWidgets.QAction(app, self)
-            menu.addAction(action)
+        path = self.model.data(index, 'path')
+        location = pifou.om.Location(path)
+        entry = pifou.om.Entry('apps', parent=location)
+        pifou.om.inherit(entry)
 
-        if not True:
-            action = QtWidgets.QAction('None available', self)
+        actions = list()
+        if entry.isparent:
+            for app in entry:
+                actions.append(app.path.name)
+
+        if not actions:
+            actions.append('No apps')
+
+        for action in actions:
+            action = QtWidgets.QAction(action, self)
             menu.addAction(action)
 
         action = menu.exec_(QtGui.QCursor.pos())
-        if action:
+        if action and action.text() != 'No apps':
             app = action.text()
-
-            item = self.model.item(index)
-            item.set_data(role='user', value=getpass.getuser())
-            item.set_data(role='app', value=app)
-            self.add_workspace.emit(index)
-
-    def setup_tray(self):
-        tray = QtWidgets.QSystemTrayIcon(self)
-        tray.setIcon(QtGui.QIcon('icon_dashboard_16x16.png'))
-
-        tray.activated.connect(self.tray_activated_event)
-
-        restore = QtWidgets.QAction('&Restore', self, triggered=self.restore)
-        quit_ = QtWidgets.QAction('&Quit', self, triggered=self.quit)
-
-        menu = QtWidgets.QMenu(self)
-        for action in (restore, quit_):
-            menu.addAction(action)
-
-        tray.setContextMenu(menu)
-        tray.setObjectName('Tray')
-        tray.show()
-
-    def remove_tray(self):
-        tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
-        if tray:
-            tray.hide()
-
-    def tray_activated_event(self, reason):
-        """Tray icon was clicked"""
-        if reason != QtWidgets.QSystemTrayIcon.Trigger:
-            return
-
-        self.animated_show()
-        self.restore()
-
-    def restore(self):
-        """Restore window"""
-        self.raise_()
-        self.activateWindow()
-        self.showNormal()
-        self.animated_show()
-
-    def quit(self):
-        """Right-clicking on tray-icon and quitting permanently"""
-        self.log.info("Removing tray icon")
-        tray = self.findChild(QtWidgets.QSystemTrayIcon, 'Tray')
-        tray.hide()
-
-        self.log.info("Quitting Dashboard")
-        animation = self.window_fade_out()
-        animation.finished.connect(QtWidgets.QApplication.instance().quit)
-
-        self.close()
+            self.add_workspace(app, index)
 
 
 if __name__ == '__main__':
+    import pifou
+    import pigui
+    pifou.setup_log()
+    pigui.setup_log()
+
     import pigui.pyqt5.util
 
     with pigui.pyqt5.util.application_context():
@@ -195,6 +182,6 @@ if __name__ == '__main__':
         win = Dash()
         win.set_model(model)
         win.resize(*dash.settings.WINDOW_SIZE)
-        win.show()
+        win.animated_show()
 
-        model.setup(uri=r'disk:c:\studio\content')
+        model.setup(r'c:\studio\content')

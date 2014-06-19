@@ -1,5 +1,5 @@
 
-"""Dashboard-specific items"""
+"""Dashboard-specific delegates"""
 
 # pifou library
 import pifou
@@ -12,13 +12,13 @@ from PyQt5 import QtWidgets
 
 # pigui library
 import pigui.service
-import pigui.pyqt5.widgets.item
+import pigui.pyqt5.widgets.delegate
 
 # local library
 import dash.event
 
 
-class TreeItem(pigui.pyqt5.widgets.item.TreeItem):
+class FolderDelegate(pigui.pyqt5.widgets.delegate.FolderDelegate):
     """Append context-menu"""
 
     def action_event(self, state):
@@ -51,13 +51,17 @@ class TreeItem(pigui.pyqt5.widgets.item.TreeItem):
         menu.exec_(event.globalPos())
 
 
-class WorkspaceItem(TreeItem):
+class FileDelegate(pigui.pyqt5.widgets.delegate.FileDelegate):
+    pass
+
+
+class WorkspaceDelegate(FolderDelegate):
     @property
     def sort_key(self):
         return '{'
 
 
-class CommandItem(TreeItem):
+class CommandDelegate(FolderDelegate):
     @property
     def sort_key(self):
         return '{'
@@ -76,10 +80,10 @@ if __name__ == '__main__':
     with pigui.pyqt5.util.application_context():
         path = r'S:\content\jobs\skydivers'
         node = pifou.pom.node.Node.from_str(path)
-        # item = pigui.pyqt5.widgets.item.Item.from_node(node)
-        item = TreeItem(node.path.as_str)
+        # delegate = pigui.pyqt5.widgets.delegate.Delegate.from_node(node)
+        delegate = FolderDelegate(node.path.as_str, index='hello')
 
-        # for child in item:
+        # for child in delegate:
             # pass
 
-        item.show()
+        delegate.show()

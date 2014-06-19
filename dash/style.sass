@@ -8,6 +8,7 @@ $brown:     hsl(20%, 50%, 30%)
 $green:     hsl(85%, 50%, 30%)
 $highlight: hsl(35%, 50%, 80%)
 
+
 @mixin outset
     border-style: solid
     border-width: 1px
@@ -21,9 +22,9 @@ $highlight: hsl(35%, 50%, 80%)
     border-style: solid
     border-width: 1px
     border-left-color: darken($mid, 5%)
-    border-right-color: lighten($mid, 10%)
+    border-right-color: lighten($mid, 5%)
     border-top-color: darken($mid, 5%)
-    border-bottom-color: lighten($mid, 10%)
+    border-bottom-color: lighten($mid, 5%)
 
 
 Dash
@@ -32,24 +33,23 @@ Dash
         background-color: $mid
 
 
-    WorkspaceItem, AppItem
+    WorkspaceDelegate
         @include inset
         background-color: $dark
-        // min-height: 30px
-        // min-width: 70px
         margin: 3px 3px 0px 3px
         padding-left: 3px
         text-align: left
         border-right: 3px solid $red
+        border-right: 3px solid orange
 
         &:hover
             background-color: $brown
-
-        &:pressed
+        &:checked
             background-color: lighten($brown, 10%)
+        &:checked:hover
+            background-color: lighten($brown, 15%)
+        &:pressed
+            background-color: lighten($brown, 20%)
 
-        &:pressed:hover
-            background-color: lighter($brown, 15%)
-
-    CommandItem
+    CommandDelegate
         background-color: $dark
