@@ -63,7 +63,7 @@ class CommandDelegate(FolderDelegate):
     pass
 
     def selected_event(self):
-        event = dash.event.CommandEvent(index=self.index)
+        event = pigui.pyqt5.event.CommandEvent(index=self.index)
         QtWidgets.QApplication.postEvent(self, event)
 
 

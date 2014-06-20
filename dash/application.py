@@ -69,6 +69,26 @@ class Dash(object):
 
         raise NotImplemented
 
+    def args_from_workspace(self, root, application):
+        """Fetch arguments from `root` for `application`
+
+        Arguments:
+            root (str): Absolute path to workspace
+
+        """
+
+        raise NotImplemented
+
+    def environment_from_workspace(self, root, application):
+        """Fetch environment settings from `root` for `application`
+
+        Arguments:
+            root (str): Absolute path to workspace
+
+        """
+
+        raise NotImplemented
+
 
 if __name__ == '__main__':
     import pigui.pyqt5.util

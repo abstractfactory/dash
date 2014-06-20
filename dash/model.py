@@ -17,7 +17,7 @@ class Item(pigui.pyqt5.model.ModelItem):
     """Wrap pifou.pom.node in ModelItem
 
      _______________________
-    |   pigui.pyqt5.model   |
+    |          Item         |
     |   ____________________|
     |  |__________________
     | |-                  |
