@@ -29,9 +29,7 @@ setup(
     package_data={
         'dash': [
                  '*.pyw',
-                 '*.css',
-                 'bin/*.py'
-                 'bin/*.pyw',
+                 '*.css'
         ],
     },
     include_package_data=True,

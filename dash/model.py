@@ -1,4 +1,6 @@
 
+# standard library
+import os
 import getpass
 
 # pigui library
@@ -71,6 +73,38 @@ class Model(pigui.pyqt5.model.Model):
         self.register_item(item)
         return item
 
+    def set_data(self, index, key, value):
+        if key == pigui.pyqt5.model.Display:
+            """Rename `index` to `value`"""
+            path = self.data(index, 'path')
+            suffix = self.data(index, 'suffix')
+
+            basename = value
+            suffix = suffix
+
+            if suffix:
+                basename += '.' + suffix
+
+            dirname = os.path.dirname(path)
+
+            old_path = path
+            new_path = os.path.join(dirname, basename)
+
+            try:
+                os.rename(old_path, new_path)
+            except OSError as e:
+                self.log.error(str(e))
+                return self.error.emit(e)
+            else:
+                old = os.path.basename(old_path)
+                new = os.path.basename(new_path)
+                self.status.emit("Renamed {} to {}".format(old, new))
+
+            # Update node with new name
+            self.set_data(index, key='path', value=basename)
+
+        super(Model, self).set_data(index, key, value)
+
     def remove_workspace(self, index):
         """`index` will point to the action of the workspace"""
         parent = self.item(index).parent.index
@@ -87,6 +121,22 @@ class Model(pigui.pyqt5.model.Model):
         """
 
         node = pifou.pom.node.Node.from_str(path)
+        path = node.path.as_str
+        assert not os.path.exists(path)
+
+        try:
+            # Physically instantiate node
+            os.makedirs(path)
+
+            # Imprint metadata
+            loc = pifou.om.Location(path)
+            pifou.om.Entry('Workspace.class', parent=loc)
+            pifou.om.flush(loc)
+
+        except Exception as e:
+            # Basic error "handling"
+            return self.error.emit(e)
+
         self.add_item({'type': 'workspace',
                        'node': node}, parent=parent)
         self.status.emit("Workspace added")

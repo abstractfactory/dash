@@ -56,6 +56,7 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         """
 
         super(Dash, self).__init__(parent)
+        self.setWindowTitle("Dash")
 
         # Pad the view, and inset background via CSS
         canvas = QtWidgets.QWidget()
@@ -151,6 +152,24 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
                 if self.confirm(message):
                     self.model.remove_workspace(event.index)
 
+        def rename(index):
+            label = self.model.data(index=event.index, key='display')
+            edited = event.view.indexes[event.index]
+            editor = pigui.pyqt5.widgets.delegate.RenamerDelegate(
+                label,
+                index=event.index,
+                parent=edited)
+
+            # Overlap edited
+            editor.resize(edited.size())
+            editor.show()
+
+        def renamed(index):
+            name = event.data
+            self.model.set_data(index=event.index,
+                                key=pigui.pyqt5.model.Display,
+                                value=name)
+
         def open_explorer(index):
             """Open `index` in file-system explorer
 
@@ -178,11 +197,15 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         CommandEvent = dash.event.Type.CommandEvent
         OpenInExplorerEvent = dash.event.Type.OpenInExplorerEvent
         OpenInAboutEvent = dash.event.Type.OpenInAboutEvent
+        EditItemEvent = pigui.pyqt5.event.Type.EditItemEvent
+        ItemRenamedEvent = pigui.pyqt5.event.Type.ItemRenamedEvent
 
         handler = {AddItemEvent: add_item,
                    CommandEvent: command,
                    OpenInExplorerEvent: open_explorer,
-                   OpenInAboutEvent: open_about}.get(event.type())
+                   OpenInAboutEvent: open_about,
+                   EditItemEvent: rename,
+                   ItemRenamedEvent: renamed}.get(event.type())
 
         if handler:
             handler(event.index)
@@ -199,6 +222,10 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
 
         self.notify(message)
 
+    def error_event(self, exception):
+        message = str(exception)
+        self.notify(message)
+
     def add_workspace(self, application, index):
         """Add `application` to `index`
 
@@ -208,17 +235,15 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
 
         """
 
-        user = getpass.getuser()
         path = self.model.data(index, 'path')
-
         node = pifou.pom.node.Node.from_str(path)
         workspace = pifou.pom.domain.Workspace.from_node(
             node=node,
-            user=user,
+            user=getpass.getuser(),
             application=application)
 
         self.model.add_workspace(path=workspace.path.as_str,
-                                 index=index)
+                                 parent=index)
 
     def add_workspace_menu(self, index):
         """Open menu with possible workspaces for `index`
