@@ -1,3 +1,5 @@
+import os
+
 import dash.delegate
 import pigui.pyqt5.widgets.list.view
 
@@ -16,16 +18,23 @@ def create_delegate(self, index):
         else:
             return dash.delegate.FileDelegate(label, index)
 
-    if typ == 'workspace':
+    elif typ == 'workspace':
         label = self.model.data(index, 'display')
         return dash.delegate.WorkspaceDelegate(label, index)
 
-    if typ == 'command':
+    elif typ == 'command':
         label = self.model.data(index, 'command')
         return dash.delegate.CommandDelegate(label, index)
 
-    else:
-        return super(DefaultList, self).create_delegate(index)
+    elif typ == 'Header':
+        parent = self.model.data(index, 'parent')
+        path = self.model.data(parent, 'path')
+        if os.path.exists(os.path.join(path, '.meta')):
+            header = super(DefaultList, self).create_delegate(index)
+            header.setProperty('hasMetadata', True)
+            return header
+
+    return super(DefaultList, self).create_delegate(index)
 
 
 def monkey_patch():

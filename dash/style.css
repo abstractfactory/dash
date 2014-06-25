@@ -29,3 +29,7 @@ Dash WorkspaceDelegate {
     background-color: #bf6a40; }
 Dash CommandDelegate {
   background-color: #191919; }
+Dash HeaderDelegate[hasMetadata=true] {
+  background-image: url(extra);
+  background-position: right;
+  padding-right: 5px; }
