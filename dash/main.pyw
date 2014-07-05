@@ -1,5 +1,3 @@
-#!python
-
 """Main entry point for build"""
 
 # standard library

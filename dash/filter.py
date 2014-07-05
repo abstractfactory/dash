@@ -1,5 +1,5 @@
 
-import pifou.om
+import pifou.metadata
 import pifou.filter
 
 from pifou.com import source
@@ -8,7 +8,7 @@ from pifou.com import source
 @pifou.filter.Operator.cascading
 def post_hide_hidden(node):
     """Hide `hidden` elements"""
-    if not pifou.om.find(node.path.as_str, 'hidden'):
+    if not pifou.metadata.find(node.path.as_str, 'hidden'):
         return node
 
 
@@ -22,7 +22,7 @@ def pre_junction(node):
 
     """
 
-    junction = pifou.om.read(node.path.as_str, 'junction')
+    junction = pifou.metadata.read(node.path.as_str, 'junction')
 
     if junction:
         assert isinstance(junction, basestring)

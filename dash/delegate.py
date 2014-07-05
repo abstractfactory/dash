@@ -3,9 +3,8 @@
 
 # pifou library
 import pifou
-import pifou.om
+import pifou.metadata
 import pifou.signal
-import pifou.pom.domain
 
 # pifou dependencies
 from PyQt5 import QtWidgets
@@ -68,14 +67,12 @@ class CommandDelegate(FolderDelegate):
 
 
 if __name__ == '__main__':
-    import pifou.pom.node
     import pigui.pyqt5.util
 
     # register()
 
     with pigui.pyqt5.util.application_context():
         path = r'S:\content\jobs\skydivers'
-        node = pifou.pom.node.Node.from_str(path)
-        delegate = FolderDelegate(node.path.as_str, index='hello')
+        delegate = FolderDelegate(path, index='hello')
 
         delegate.show()

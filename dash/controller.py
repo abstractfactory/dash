@@ -10,9 +10,6 @@ Usage:
 
 from __future__ import absolute_import
 
-# standard library
-import getpass
-
 # pifou library
 import pifou.lib
 
@@ -236,13 +233,9 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         """
 
         path = self.model.data(index, 'path')
-        node = pifou.pom.node.Node.from_str(path)
-        workspace = pifou.pom.domain.Workspace.from_node(
-            node=node,
-            user=getpass.getuser(),
-            application=application)
 
-        self.model.add_workspace(path=workspace.path.as_str,
+        self.model.add_workspace(root=path,
+                                 application=application,
                                  parent=index)
 
     def add_workspace_menu(self, index):
@@ -257,9 +250,9 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
 
         path = self.model.data(index, 'path')
         assert path, self.model.item(index)._data
-        location = pifou.om.Location(path)
-        entry = pifou.om.Entry('apps', parent=location)
-        pifou.om.inherit(entry)
+        location = pifou.metadata.Location(path)
+        entry = pifou.metadata.Entry('apps', parent=location)
+        pifou.metadata.inherit(entry)
 
         actions = list()
         if entry.isparent:

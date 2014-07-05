@@ -4,9 +4,9 @@ import os
 import getpass
 
 # pigui library
-import pifou.pom.node
-import pifou.pom.domain
-import pifou.com.source
+import pifou.com
+import pifou.metadata
+import pifou.domain.workspace
 
 # pigui library
 import pigui.pyqt5.model
@@ -14,56 +14,72 @@ import pigui.pyqt5.model
 Command = 'command'
 Workspace = 'workspace'
 
+USER = getpass.getuser()
+
+
+class Iterator(pifou.com.Iterator):
+    """Dash-specific iterator
+
+    Dash traverses the COM differenty from os.walk and this iterator
+    reflects that.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(Iterator, self).__init__(*args, **kwargs)
+
+        if not self.filter:
+            self.filter = pifou.com.default_filter
+
 
 class Item(pigui.pyqt5.model.ModelItem):
-    """Wrap pifou.pom.node in ModelItem
+    """Wrap path in ModelItem::
 
-     _______________________
-    |          Item         |
-    |   ____________________|
-    |  |__________________
-    | |-                  |
-    | |-  pifou.pom.node  |
-    | |-__________________|
-    |__|
+         _______________________
+        |          Item         |
+        |   ____________________|
+        |  |__________________
+        | |-                  |
+        | |-       path       |
+        | |-__________________|
+        |__|
 
     """
 
     def data(self, key):
-        """Intercept queries custom to Dash
-
-        Interceptions:
-            disk: Disk queries are wrapped in pifou.pom.node
-            command: Commands contain the extra key "command"
-            workspace: Workspaces wrap nodes similar to disk
-
-        """
-
+        """Intercept queries custom to Dash"""
         value = super(Item, self).data(key)
 
         if not value and self.data('type') in (pigui.pyqt5.model.Disk,
                                                Command,
                                                Workspace):
-            if key == 'path':
-                node = self.data('node')
-                return node.path.as_str
-
             if key == 'display':
-                node = self.data('node')
-                return node.path.name
+                path = self.data('path')
+                basename = os.path.basename(path)
+                name, ext = os.path.splitext(basename)
+                self.set_data('display', name)
+                return name
 
             if key == 'group':
-                node = self.data('node')
-                return node.isparent
+                path = self.data('path')
+                isgroup = os.path.isdir(path)
+                self.set_data('group', isgroup)
+                return isgroup
 
         return value
 
 
 class Model(pigui.pyqt5.model.Model):
+    """Dash-specific model
+
+    Dash adds a number of items, most prominently the workspaces
+    along with corresponding actions, such as "Launch".
+
+    """
+
     def setup(self, path):
-        node = pifou.pom.node.Node.from_str(path)
         root = self.create_item({'type': 'disk',
-                                 'node': node})
+                                 'path': path})
         self.root_item = root
         self.model_reset.emit()
 
@@ -106,68 +122,88 @@ class Model(pigui.pyqt5.model.Model):
         super(Model, self).set_data(index, key, value)
 
     def remove_workspace(self, index):
-        """`index` will point to the action of the workspace"""
+        """Remove workspace at index `index`
+
+        .. note:: `index` will point to the action of the workspace
+
+        """
+
         parent = self.item(index).parent.index
         self.remove_item(parent)
         self.status.emit("Workspace removed")
 
-    def add_workspace(self, path, parent):
-        """
+    def add_workspace(self, path, application, parent):
+        """Add workspace at absolute path `path` for application `application`
 
         Arguments:
             path (str): Path to workspace
-            parent (str): Index of new workspace
+            application (str): Name of application
+            parent (str): Index of parent to new workspace
 
         """
 
-        node = pifou.pom.node.Node.from_str(path)
-        path = node.path.as_str
-        assert not os.path.exists(path)
+        workspace = pifou.domain.workspace.resolve(root=path,
+                                                   user=USER,
+                                                   application=application)
+        assert not os.path.exists(workspace)
 
         try:
             # Physically instantiate node
-            os.makedirs(path)
+            os.makedirs(workspace)
 
             # Imprint metadata
-            loc = pifou.om.Location(path)
-            pifou.om.Entry('Workspace.class', parent=loc)
-            pifou.om.flush(loc)
+            loc = pifou.metadata.Location(workspace)
+            pifou.metadata.Entry('Workspace.class', parent=loc)
+            pifou.metadata.flush(loc)
 
         except Exception as e:
-            # Basic error "handling"
             return self.error.emit(e)
 
         self.add_item({'type': 'workspace',
-                       'node': node}, parent=parent)
+                       'path': path}, parent=parent)
         self.status.emit("Workspace added")
 
     def pull(self, index):
+        """Polulate item at index `index` with content from disk
+
+        Arguments:
+            index (str): Index of item within model, the path
+                from which is used as root for read.
+
+        """
+
+        self.add_header(index)
+
         if self.data(index, 'type') == 'disk':
-            node = self.data(index, 'node')
+            path = self.data(index, 'path')
 
-            try:
-                pifou.com.source.disk.pull(node)
-            except pifou.error.Exists:
-                self.status.emit("%s did not exist" % node.path)
+            # Is there a junction involved?
 
-            for child in node.children:
-                self.create_item({'type': 'disk',
-                                  'node': child}, parent=index)
+            if os.path.exists(path):
+                for basename in Iterator(path):
+                    fullpath = os.path.join(path, basename)
+                    self.create_item({'type': 'disk',
+                                      'path': fullpath}, parent=index)
+            else:
+                self.status.emit("%s did not exist" % path)
 
             # Append workspaces
-            user = getpass.getuser()
-            asset = pifou.pom.domain.Entity.from_node(node)
-            for workspace in asset.workspaces(user):
+            user = USER
+            for workspace in pifou.domain.workspace.ls(path, user):
+                full_path = os.path.join(path, workspace)
                 self.create_item({'type': 'workspace',
-                                  'node': workspace,
+                                  'path': full_path,
                                   'sortkey': '|'}, parent=index)
 
+            self.add_footer(index)
+
         # Append commands to workspaces
-        if self.data(index, 'type') == 'workspace':
-            node = self.data(index, 'node')
+        elif self.data(index, 'type') == 'workspace':
+            path = self.data(index, 'path')
             for command in ('launch', 'configure', 'remove'):
                 self.create_item({'type': 'command',
-                                  'node': node,
+                                  'path': path,
                                   'command': command}, parent=index)
 
-        super(Model, self).pull(index)
+        else:
+            self.add_footer(index)

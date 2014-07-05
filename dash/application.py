@@ -4,13 +4,8 @@ import os
 import subprocess
 
 # pifou library
-import pifou.om
 import pifou.lib
-import pifou.pom.node
-import pifou.pom.domain
-
-import pifou.com.util
-import pifou.com.source
+import pifou.metadata
 
 # local library
 import dash.model
@@ -49,15 +44,56 @@ class Dash(object):
         path = self.model.data(index, 'path')
 
         basename = os.path.basename(path)
-        app, _ = os.path.splitext(basename)
+        application, _ = os.path.splitext(basename)
 
-        exe = pifou.lib.where(app)
+        cmd = list()
+
+        exe = pifou.lib.where(application)
         if not exe:
-            print "{} could not be found".format(app)
+            print "{} could not be found".format(application)
             return False
 
-        print "running %s" % exe
-        subprocess.Popen(exe)
+        cmd.append(exe)
+
+        location = pifou.metadata.Location(path)
+
+        # Get arguments
+        args = pifou.metadata.Entry("apps/" + application + "/args",
+                                    parent=location)
+        pifou.metadata.inherit(args)
+
+        for arg in args:
+            pifou.metadata.pull(arg)
+            cmd.append(arg.path.name)
+
+        # Get keyword arguments
+        args = pifou.metadata.Entry("apps/" + application + "/kwargs",
+                                    parent=location)
+        pifou.metadata.inherit(args)
+
+        for arg in args:
+            pifou.metadata.pull(arg)
+            cmd.append(arg.path.name)
+            cmd.append(arg.value)
+
+        # Resolve keywords
+        keywords = {
+            '$workspace': path,
+        }
+
+        for part in cmd:
+            part = part.lower()
+
+            try:
+                keyword = keywords[part]
+                index = cmd.index(part)
+                cmd[index] = keyword
+
+            except KeyError:
+                pass
+
+        print "Running %s" % cmd
+        subprocess.Popen(cmd)
 
     def kwargs_from_workspace(self, root, application):
         """Fetch keyword arguments from `root` for `application`
