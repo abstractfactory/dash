@@ -135,8 +135,9 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
             if command == 'launch':
                 path = self.model.data(event.index, 'path')
                 message = path + "\n\n" + "Launch?"
-                if self.confirm(message):
-                    self.launch.emit(event.index)
+                self.launch.emit(event.index)
+                self.notify("Launching {}".format(path))
+                # if self.confirm(message):
 
             if command == 'configure':
                 path = self.model.data(event.index, 'path')

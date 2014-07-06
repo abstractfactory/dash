@@ -1,7 +1,13 @@
+"""Custom model for Dash
+
+Attributes:
+    COMMAND: The command-item type
+    Workspace: The workspace-item type
+
+"""
 
 # standard library
 import os
-import getpass
 
 # pigui library
 import pifou.com
@@ -11,16 +17,14 @@ import pifou.domain.workspace
 # pigui library
 import pigui.pyqt5.model
 
-Command = 'command'
-Workspace = 'workspace'
-
-USER = getpass.getuser()
+COMMAND = 'command'
+WORKSPACE = 'workspace'
 
 
 class Iterator(pifou.com.Iterator):
-    """Dash-specific iterator
+    """Custom iterator for Dash
 
-    Dash traverses the COM differenty from os.walk and this iterator
+    Dash traverses the COM differently from ``os.walk`` and this iterator
     reflects that.
 
     """
@@ -33,26 +37,15 @@ class Iterator(pifou.com.Iterator):
 
 
 class Item(pigui.pyqt5.model.ModelItem):
-    """Wrap path in ModelItem::
-
-         _______________________
-        |          Item         |
-        |   ____________________|
-        |  |__________________
-        | |-                  |
-        | |-       path       |
-        | |-__________________|
-        |__|
-
-    """
+    """Custom model-item for Dash"""
 
     def data(self, key):
-        """Intercept queries custom to Dash"""
+        """Custom intercept for Dash"""
         value = super(Item, self).data(key)
 
         if not value and self.data('type') in (pigui.pyqt5.model.Disk,
-                                               Command,
-                                               Workspace):
+                                               COMMAND,
+                                               WORKSPACE):
             if key == 'display':
                 path = self.data('path')
                 basename = os.path.basename(path)
@@ -77,19 +70,36 @@ class Model(pigui.pyqt5.model.Model):
 
     """
 
-    def setup(self, path):
+    def setup(self, root):
+        """Custom setup for Dash
+
+        Arguments:
+            root (str): Absolute path from which to populate model.
+
+        """
+
         root = self.create_item({'type': 'disk',
-                                 'path': path})
+                                 'path': root})
         self.root_item = root
         self.model_reset.emit()
 
     def create_item(self, data, parent=None):
+        """Overridden to accommodate for custom Item (see above)"""
         assert isinstance(parent, basestring) or parent is None
         item = Item(data, parent=self.indexes.get(parent))
         self.register_item(item)
         return item
 
     def set_data(self, index, key, value):
+        """Overridden to accommodate for data custom to Dash
+
+        Overridden data:
+            Display: When altering the name of any item within the
+                model, also alter the physical name on disk. If
+                unsuccessful, do not alter item and alert user.
+
+        """
+
         if key == pigui.pyqt5.model.Display:
             """Rename `index` to `value`"""
             path = self.data(index, 'path')
@@ -132,18 +142,17 @@ class Model(pigui.pyqt5.model.Model):
         self.remove_item(parent)
         self.status.emit("Workspace removed")
 
-    def add_workspace(self, path, application, parent):
-        """Add workspace at absolute path `path` for application `application`
+    def add_workspace(self, root, application, parent):
+        """Add workspace at absolute path `root` for application `application`
 
         Arguments:
-            path (str): Path to workspace
+            root (str): Path to workspace
             application (str): Name of application
             parent (str): Index of parent to new workspace
 
         """
 
-        workspace = pifou.domain.workspace.resolve(root=path,
-                                                   user=USER,
+        workspace = pifou.domain.workspace.resolve(root=root,
                                                    application=application)
         assert not os.path.exists(workspace)
 
@@ -160,11 +169,11 @@ class Model(pigui.pyqt5.model.Model):
             return self.error.emit(e)
 
         self.add_item({'type': 'workspace',
-                       'path': path}, parent=parent)
+                       'path': root}, parent=parent)
         self.status.emit("Workspace added")
 
     def pull(self, index):
-        """Polulate item at index `index` with content from disk
+        """Populate item at index `index` with content from disk
 
         Arguments:
             index (str): Index of item within model, the path
@@ -178,6 +187,9 @@ class Model(pigui.pyqt5.model.Model):
             path = self.data(index, 'path')
 
             # Is there a junction involved?
+            junction = pifou.metadata.read(path, 'junction.string')
+            if junction:
+                path = os.path.join(path, junction)
 
             if os.path.exists(path):
                 for basename in Iterator(path):
@@ -188,8 +200,7 @@ class Model(pigui.pyqt5.model.Model):
                 self.status.emit("%s did not exist" % path)
 
             # Append workspaces
-            user = USER
-            for workspace in pifou.domain.workspace.ls(path, user):
+            for workspace in pifou.domain.workspace.ls(path):
                 full_path = os.path.join(path, workspace)
                 self.create_item({'type': 'workspace',
                                   'path': full_path,
