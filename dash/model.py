@@ -152,8 +152,8 @@ class Model(pigui.pyqt5.model.Model):
 
         """
 
-        workspace = pifou.domain.workspace.resolve(root=root,
-                                                   application=application)
+        workspace = pifou.domain.workspace.assemble(root=root,
+                                                    application=application)
         assert not os.path.exists(workspace)
 
         try:

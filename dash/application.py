@@ -42,7 +42,9 @@ class Dash(object):
         """
 
         path = self.model.data(index, 'path')
+        self.launch_path(path)
 
+    def launch_path(self, path):
         basename = os.path.basename(path)
         application, _ = os.path.splitext(basename)
 
