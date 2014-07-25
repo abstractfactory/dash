@@ -256,7 +256,7 @@ class Dash(pigui.pyqt5.widgets.application.widget.ApplicationBase):
         pifou.metadata.inherit(entry)
 
         actions = list()
-        if entry.isparent:
+        if entry.type in ('list', 'dict'):
             for app in entry:
                 actions.append(app.path.name)
 

@@ -21,7 +21,7 @@ class Dash(object):
 
     def set_controller(self, controller):
         self.controller = controller
-        controller.launch.connect(self.launch_event)
+        controller.launch.connect(self.launch_listener)
 
     def set_model(self, model):
         self.model = model
@@ -29,7 +29,7 @@ class Dash(object):
         if self.controller:
             self.controller.set_model(model)
 
-    def launch_event(self, index):
+    def launch_listener(self, index):
         """Launch `path`
 
         `path` points to a live workspace.
@@ -60,21 +60,24 @@ class Dash(object):
         location = pifou.metadata.Location(path)
 
         # Get arguments
-        args = pifou.metadata.Entry("apps/" + application + "/args",
-                                    parent=location)
+        args = pifou.metadata.entry(location, "apps/"
+                                              + application
+                                              + "/args")
         pifou.metadata.inherit(args)
 
         for arg in args:
-            pifou.metadata.pull(arg)
+            pifou.metadata.inherit(arg)
             cmd.append(arg.path.name)
 
         # Get keyword arguments
-        args = pifou.metadata.Entry("apps/" + application + "/kwargs",
-                                    parent=location)
+        args = pifou.metadata.entry(location, "apps/"
+                                              + application
+                                              + "/kwargs")
         pifou.metadata.inherit(args)
 
         for arg in args:
-            pifou.metadata.pull(arg)
+            pifou.metadata.inherit(arg)
+            print "Inheriting from kwarg: %s" % arg.path
             cmd.append(arg.path.name)
             cmd.append(arg.value)
 
@@ -84,7 +87,7 @@ class Dash(object):
         }
 
         for part in cmd:
-            part = part.lower()
+            part = str(part).lower()
 
             try:
                 keyword = keywords[part]
