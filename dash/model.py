@@ -154,7 +154,9 @@ class Model(pigui.pyqt5.model.Model):
 
         workspace = pifou.domain.workspace.assemble(root=root,
                                                     application=application)
-        assert not os.path.exists(workspace)
+
+        if os.path.exists(workspace):
+            self.error.emit(ValueError("%s already exists" % workspace))
 
         try:
             # Physically instantiate node
@@ -168,8 +170,9 @@ class Model(pigui.pyqt5.model.Model):
         except Exception as e:
             return self.error.emit(e)
 
+        print "Adding item: %s" % root
         self.add_item({'type': 'workspace',
-                       'path': root}, parent=parent)
+                       'path': workspace}, parent=parent)
         self.status.emit("Workspace added")
 
     def pull(self, index):

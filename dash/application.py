@@ -12,6 +12,7 @@ import dash.model
 import dash.controller
 
 
+@pifou.lib.log
 class Dash(object):
     """Dash controller"""
 
@@ -52,7 +53,8 @@ class Dash(object):
 
         exe = pifou.lib.where(application)
         if not exe:
-            print "{} could not be found".format(application)
+            self.log.info("Application '{0}' could "
+                          "not be found".format(application))
             return False
 
         cmd.append(exe)
@@ -77,9 +79,9 @@ class Dash(object):
 
         for arg in args:
             pifou.metadata.inherit(arg)
-            print "Inheriting from kwarg: %s" % arg.path
             cmd.append(arg.path.name)
             cmd.append(arg.value)
+            self.log.info("Inheriting from kwarg: %s" % arg.path)
 
         # Resolve keywords
         keywords = {
@@ -87,17 +89,17 @@ class Dash(object):
         }
 
         for part in cmd:
+            index = cmd.index(part)
             part = str(part).lower()
 
             try:
                 keyword = keywords[part]
-                index = cmd.index(part)
                 cmd[index] = keyword
 
             except KeyError:
                 pass
 
-        print "Running %s" % cmd
+        self.log.info("Running %s" % cmd)
         subprocess.Popen(cmd)
 
     def kwargs_from_workspace(self, root, application):
